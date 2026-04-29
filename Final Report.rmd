@@ -1,0 +1,88 @@
+---
+title: "Descriptive Analysis: The Netflix Effect on Local Housing Prices"
+author: "Jayden Johnston and Lindsey Paulson"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+```
+
+# Research Question
+
+Do popular television shows raise housing prices in the counties where they are filmed? Following the premiere of *Yellowstone* in 2018, Gallatin County, Montana saw a sharp rise in home prices, tourism, and short-term rentals. This pattern is not unique: anecdotal reports surround *Breaking Bad* in Albuquerque, *Outer Banks* in Charleston, and *The White Lotus* in Maui. We test whether this "Netflix Effect" shows up systematically in housing data across six U.S. shows.
+
+The question matters because filming-county housing markets directly affect affordability, local tax bases, and short-term rental policy. If media exposure is a meaningful driver of price growth, that has implications for land-use planning and rental regulation in places that host film and television production.
+
+
+# Data
+
+We use the FHFA County House Price Index (HPI), 2000–2024, rescaled so each county equals 100 in 2000. The panel covers 60,259 county-year observations across 2,414 counties, of which 6 are treated and 2,408 serve as controls. The treated counties are Gallatin (MT, *Yellowstone*, 2018), Bernalillo (NM, *Breaking Bad*, 2008), Maui (HI, *The White Lotus*, 2021), Fulton (GA, *Stranger Things*, 2016), Charleston (SC, *Outer Banks*, 2020), and Camden (MO, *Ozark*, 2017).
+
+Treatment assignment was constructed from a hand-coded show–county–year mapping built from Wikipedia and IMDb. Full data sourcing, cleaning decisions, and supplementary Zillow rent and Inside Airbnb data are documented in the Stage 2 writeup.
+
+# Methods
+
+Because each show premiered in a different year, a simple before-and-after comparison within a single county cannot seperate the show's effect from national housing trends such as the 2008 financial crisis or the 2020 pandemic. We therefore use a staggered difference-in-difference (DiD) design with two-way fixed effects, estimated on the full panel of 2,414 counties. The baseline model is: 
+
+$HPI_{i,t} = \alpha_i + \gamma_t + \beta \cdot Post_{i,t} + \varepsilon_{i,t}$
+
+Where $HPI_{i,t}$ is county i's 2000-base house price index in year t, $\alpha_i$ is a county fixed effect that absorbs common national shocks, and $Post_{i,t}$ equals 1 for treated counties in years on or after their show's premiere and 0 otherwise. The coefficient $\beta$ is the average treatment effect. 
+
+We estimate three specifications. **Model 1** is the baseline DiD on the HPI level. **Model 2** drops *Outer Banks* and *The White Lotus*, whose premieres overlap with the COVID-era housing boom, to test whether the result depends on those two cohorts. **Model 3** uses the annual percent change in HPI as the outcome, which checks whether any effect is a sudden jump at premiere or a gradual divergence in growth rates.
+
+# Exploratory Analysis
+
+Figure 1 shows HPI for each treated county from 2000–2024, with each show's premiere marked by a dashed line. Five of six counties appreciate sharply, reaching 2024 values between about 250 (Fulton, GA) and 450 (Gallatin, MT). Bernalillo (Breaking Bad) is the exception — it tracks the national median the whole way. Most of the acceleration happens after 2018, which is both when the later shows aired and when the national housing boom started.
+
+![Figure 1. HPI trends in the six treated counties, with premiere years marked.](Output/fig1_hpi_treated_trends.png)
+
+Figure 4 puts the treated counties next to the national median. Most of them sit well above the median by 2024, and the gap widens noticeably after 2018. A couple of the counties were already running above the national median before their shows aired.
+
+![Figure 4. Treated counties vs. the national median HPI, 2000–2024.](Output/fig4_treated_vs_national_hpi.png)
+
+# Regression Models
+
+To quantify the pattern, I estimate a difference-in-differences regression with two-way fixed effects:
+
+$$HPI_{it} = \alpha_i + \gamma_t + \beta \cdot Post_{it} + \varepsilon_{it}$$
+
+$\alpha_i$ is a county fixed effect (absorbs time-invariant differences between counties), $\gamma_t$ is a year fixed effect (absorbs national shocks), and $Post_{it} = 1$ for treated counties in years at or after their show's premiere. $\beta$ is the coefficient of interest — the average change in HPI in treated counties after the premiere, net of the national year trend. Standard errors are clustered at the county level.
+
+We also ran two robustness checks. **Model 2** drops *Outer Banks* and *The White Lotus* since their premieres overlap with the pandemic housing boom. **Model 3** uses the annual % change in HPI instead of the level.
+
+# Results
+
+| Outcome | $\hat{\beta}_{Post}$ | Std. Error | p-value |
+|---|---|---|---|
+| **(1)** HPI level, all shows | **41.68** | 17.22 | **0.016** |
+| **(2)** HPI level, excl. COVID-era premieres | 33.00 | 21.61 | 0.127 |
+| **(3)** Annual % change in HPI | 0.22 | 0.57 | 0.700 |
+
+**Model 1** says treated counties' HPI is about 42 points higher after their show premieres than their own pre-premiere level and the national trend would predict. On a 2000 base of 100, that's roughly 42 percentage points of extra appreciation. Significant at the 5% level.
+
+**Model 2** cuts the two COVID-era cohorts. The estimate drops to about 33 and loses significance (p = 0.127), so roughly a quarter of the headline effect is coming from those two shows. The rest is still positive.
+
+**Model 3** uses growth rates instead of levels. The coefficient is basically zero (0.22, p = 0.70). This tells me the level gap isn't from a sudden post-premiere jump — it builds up slowly, with treated counties appreciating a little faster each year.
+
+One caveat visible in Figure 4: some treated counties were already on a higher-growth path before their shows aired. DiD assumes that wasn't the case, so Model 1 probably overstates any real "Netflix effect." 
+
+# Summary
+
+Across six filming counties, treated areas appreciated faster than the rest of the U.S. after their shows aired, with a baseline DiD estimate of about 42 HPI points. Two tweaks affect this finding though. First, the effect weakens substantially when COVID-era premieres are excluded, suggesting the result is partly capturing the pandemic housing boom rather than a clean media effect. Second, the growth-rate specification tells us the gap grows gradually rather than right at premiere, which makes it harder to say for sure that a single show drives a discrete shock to local demand. Figure 4 also shows that some treated counties were on a higher-growth path before their shows aired, which violates DiD's parallel-trends assumption and likely biases Model 1 upward.
+
+Taken together, the evidence is consistent with a modest "Netflix Effect" in some counties, but a clean causal estimate would require a research design with stronger control over pre-existing trends.
+
+# Challenge
+
+Our challenge was **web scraping with `rvest`**, which we used to pull filming-location and premiere-year information from Wikipedia show pages to construct the treatment assignment. This went beyond the in-class material on `rvest` in two ways: we worked with infobox tables that required navigating nested HTML structure rather than flat tables, and we cross-validated the scraped premiere years against IMDb metadata to catch any differences. The resulting mapping is what links each show to its county and treatment year throughout the analysis.
